@@ -1,0 +1,165 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
+    Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+}
+
+/* Minimal theme overrides */
+[data-theme="minimal"] {
+  --shadow-color: 220 3% 15%;
+  --shadow-strength: 1%;
+  --shadow: 
+    0 1px 3px -1px hsl(var(--shadow-color) / calc(var(--shadow-strength) + 2%)),
+    0 3px 8px -3px hsl(var(--shadow-color) / calc(var(--shadow-strength) + 4%));
+}
+
+[data-theme="minimal"] .cm-editor {
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+}
+
+[data-theme="minimal"] .terminal-output {
+  font-family: 'SF Mono', 'Monaco', 'Menlo', 'Courier', monospace;
+}
+
+[data-theme="minimal"] button {
+  transition: all 0.2s ease;
+}
+
+[data-theme="minimal"] button:hover {
+  transform: translateY(-1px);
+}
+
+.cm-editor {
+  height: 100%;
+}
+
+/* Theme-specific animations */
+@keyframes glitch {
+  0% {
+    text-shadow: 0.05em 0 0 #ff00c1, -0.05em -0.025em 0 #00ff9f;
+  }
+  14% {
+    text-shadow: 0.05em 0 0 #ff00c1, -0.05em -0.025em 0 #00ff9f;
+  }
+  15% {
+    text-shadow: -0.05em -0.025em 0 #ff00c1, 0.025em 0.025em 0 #00ff9f;
+  }
+  49% {
+    text-shadow: -0.05em -0.025em 0 #ff00c1, 0.025em 0.025em 0 #00ff9f;
+  }
+  50% {
+    text-shadow: 0.025em 0.05em 0 #ff00c1, 0.05em 0 0 #00ff9f;
+  }
+  99% {
+    text-shadow: 0.025em 0.05em 0 #ff00c1, 0.05em 0 0 #00ff9f;
+  }
+  100% {
+    text-shadow: -0.025em 0 0 #ff00c1, -0.025em -0.025em 0 #00ff9f;
+  }
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(var(--theme-accent-rgb), 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(var(--theme-accent-rgb), 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(var(--theme-accent-rgb), 0);
+  }
+}
+
+@keyframes float {
+  0% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+  100% {
+    transform: translateY(0px);
+  }
+}
+
+/* Theme-specific styles */
+[data-theme="cyberpunk"] .glitch-text {
+  animation: glitch 1s infinite;
+  font-weight: bold;
+}
+
+[data-theme="gaming"] .game-element {
+  animation: pulse 2s infinite;
+}
+
+[data-theme="minimal"] .float-element {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* Terminal styles */
+.terminal-output {
+  opacity: 0;
+  transform: translateY(10px);
+  animation: fadeIn 0.3s ease forwards;
+}
+
+@keyframes fadeIn {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Theme transitions */
+.theme-transition {
+  transition: all 0.3s ease-in-out;
+}
+
+/* Markdown styles */
+.prose {
+  @apply text-current;
+}
+
+.prose code {
+  @apply px-1.5 py-0.5 rounded bg-black bg-opacity-20;
+}
+
+.prose pre {
+  @apply p-4 rounded-lg bg-black bg-opacity-20;
+}
+
+.prose pre code {
+  @apply p-0 bg-transparent;
+}
+
+.prose h1,
+.prose h2,
+.prose h3,
+.prose h4 {
+  @apply font-semibold text-current;
+}
+
+.prose p {
+  @apply my-2;
+}
+
+.prose ul {
+  @apply my-2 list-disc list-inside;
+}
+
+.prose ol {
+  @apply my-2 list-decimal list-inside;
+}
+
+.prose a {
+  @apply text-blue-400 hover:underline;
+}
