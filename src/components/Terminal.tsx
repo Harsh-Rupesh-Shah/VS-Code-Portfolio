@@ -3,7 +3,7 @@ import { Terminal as TerminalIcon, ChevronUp, ChevronDown } from 'lucide-react';
 import { useThemeStore } from '../store/useThemeStore';
 import { cn } from '../utils/cn';
 
-const RESUME_URL = 'src/components/resume.pdf'; // Replace with actual resume URL
+const RESUME_URL = 'https://example.com/resume.pdf'; // Replace with actual resume URL
 
 interface CommandOutput {
   content: string;
@@ -13,17 +13,19 @@ interface CommandOutput {
 export const Terminal = () => {
   const [command, setCommand] = useState('');
   const [output, setOutput] = useState<CommandOutput[]>([
-    { content: 'Welcome to Harsh Rupesh Shah"s" Portfolio Terminal!', type: 'info' },
+    { content: 'Welcome to the Portfolio Terminal!', type: 'info' },
     { content: 'Type "help" to see available commands.', type: 'info' },
   ]);
   const [height, setHeight] = useState(192); // Default height (48px * 4)
   const [isResizing, setIsResizing] = useState(false);
   const terminalRef = useRef<HTMLDivElement>(null);
+  const resizeRef = useRef<HTMLDivElement>(null);
   const { theme, mode } = useThemeStore();
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (isResizing && terminalRef.current) {
+        e.preventDefault();
         const terminalBottom = window.innerHeight;
         const newHeight = terminalBottom - e.clientY;
         setHeight(Math.max(192, Math.min(newHeight, window.innerHeight * 0.8)));
@@ -32,16 +34,19 @@ export const Terminal = () => {
 
     const handleMouseUp = () => {
       setIsResizing(false);
+      document.body.style.userSelect = '';
     };
 
     if (isResizing) {
       document.addEventListener('mousemove', handleMouseMove);
       document.addEventListener('mouseup', handleMouseUp);
+      document.body.style.userSelect = 'none';
     }
 
     return () => {
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
+      document.body.style.userSelect = '';
     };
   }, [isResizing]);
 
@@ -91,34 +96,34 @@ export const Terminal = () => {
               case 'projects':
                 newOutput.push(
                   { content: '🚀 Projects:', type: 'success' },
-                  { content: '  1. ResumeCraft - Resume Builder Platform', type: 'info' },
-                  { content: '     - Users can create professional resumes easily', type: 'info' },
-                  { content: '     - Built using MERN Stack with JWT security', type: 'info' },
-                  { content: '  2. CIS Audit Automation - Compliance Tool', type: 'info' },
-                  { content: '     - Automates compliance checks for CIS benchmarks', type: 'info' },
-                  { content: '     - Provides security recommendations via system scans', type: 'info' }
+                  { content: '  1. AI-Powered Analytics Platform', type: 'info' },
+                  { content: '     - Enterprise-level analytics with ML', type: 'info' },
+                  { content: '     - 1M+ daily data points', type: 'info' },
+                  { content: '  2. E-commerce Microservices', type: 'info' },
+                  { content: '     - Scalable platform with 10k+ users', type: 'info' },
+                  { content: '     - 99.99% uptime', type: 'info' },
+                  { content: '  3. Real-time Collaboration Tool', type: 'info' },
+                  { content: '     - WebSocket-based platform', type: 'info' },
+                  { content: '     - 10k+ daily active users', type: 'info' }
                 );
                 break;
               case 'skills':
                 newOutput.push(
                   { content: '💻 Technical Skills:', type: 'success' },
-                  { content: '  • Languages: JavaScript, Python, C/C++, Java', type: 'info' },
-                  { content: '  • Frontend: React, Redux, Bootstrap', type: 'info' },
-                  { content: '  • Backend: Node.js, Express', type: 'info' },
-                  { content: '  • Databases: MongoDB, SQL', type: 'info' },
-                  { content: '  • Security: JWT, Encryption, CIS Compliance', type: 'info' },
-                  { content: '  • Deployment: Netlify, Render, Amazon Amplify', type: 'info' },
-                  { content: '  • Other: Git, LaTeX', type: 'info' },
-
+                  { content: '  • Languages: JavaScript, TypeScript, Python, Java', type: 'info' },
+                  { content: '  • Frontend: React, Next.js, Vue.js, Tailwind CSS', type: 'info' },
+                  { content: '  • Backend: Node.js, Express, Django, Spring Boot', type: 'info' },
+                  { content: '  • Databases: PostgreSQL, MongoDB, Redis', type: 'info' },
+                  { content: '  • Cloud: AWS, Google Cloud, Azure', type: 'info' }
                 );
                 break;
               case 'contact':
                 newOutput.push(
                   { content: '📫 Contact Information:', type: 'success' },
-                  { content: '  • Email: hrsshah04022004@gmail.com', type: 'info' },
-                  { content: '  • LinkedIn: linkedin.com/in/harshshah2004', type: 'info' },
-                  { content: '  • GitHub: github.com/Harsh-Rupesh-Shah', type: 'info' },
-                  { content: '  • Whatsapp: +91 9175366700', type: 'info' }
+                  { content: '  • Email: john.doe@example.com', type: 'info' },
+                  { content: '  • LinkedIn: linkedin.com/in/johndoe', type: 'info' },
+                  { content: '  • GitHub: github.com/johndoe', type: 'info' },
+                  { content: '  • Twitter: @johndoe', type: 'info' }
                 );
                 break;
               default:
@@ -157,6 +162,7 @@ export const Terminal = () => {
       }}
     >
       <div 
+        ref={resizeRef}
         className="h-9 flex items-center px-4 border-b transition-colors duration-300 cursor-ns-resize"
         style={{ 
           backgroundColor: theme.secondary,

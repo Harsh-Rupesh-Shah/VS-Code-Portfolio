@@ -4,63 +4,98 @@ import { useThemeStore } from '../store/useThemeStore';
 
 export const useVoiceCommands = () => {
   const [isListening, setIsListening] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const { openFile, files } = useFileStore();
   const { setMode } = useThemeStore();
 
   useEffect(() => {
-    let recognition: SpeechRecognition | null = null;
+    let recognition: any = null;
 
-    if ('webkitSpeechRecognition' in window) {
-      recognition = new webkitSpeechRecognition();
-      recognition.continuous = true;
-      recognition.interimResults = false;
+    const initializeSpeechRecognition = () => {
+      try {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        recognition = new SpeechRecognition();
+        recognition.continuous = true;
+        recognition.interimResults = false;
+        recognition.lang = 'en-US';
 
-      recognition.onstart = () => {
-        setIsListening(true);
-      };
+        recognition.onstart = () => {
+          setIsListening(true);
+          setError(null);
+        };
 
-      recognition.onend = () => {
-        setIsListening(false);
-      };
-
-      recognition.onresult = (event) => {
-        const command = event.results[event.results.length - 1][0].transcript.toLowerCase();
-
-        // Handle commands
-        if (command.includes('show me your projects')) {
-          const projectsFile = files.find(f => f.name === 'Projects.json');
-          if (projectsFile) {
-            openFile(projectsFile);
+        recognition.onend = () => {
+          setIsListening(false);
+          // Restart recognition
+          if (!error) {
+            recognition.start();
           }
-        }
-        else if (command.includes('switch to dark mode')) {
-          setMode('dark');
-        }
-        else if (command.includes('download resume')) {
-          const link = document.createElement('a');
-          link.href = '/resume.pdf'; // Update with actual resume URL
-          link.download = 'resume.pdf';
-          link.click();
-        }
-      };
+        };
 
-      recognition.onerror = (event) => {
-        console.error('Speech recognition error:', event.error);
-        setIsListening(false);
-      };
-    }
+        recognition.onerror = (event: any) => {
+          console.error('Speech recognition error:', event.error);
+          setError(event.error);
+          setIsListening(false);
+        };
 
-    // Start listening
-    if (recognition) {
-      recognition.start();
-    }
+        recognition.onresult = (event: any) => {
+          const command = event.results[event.results.length - 1][0].transcript.toLowerCase();
+          console.log('Voice command received:', command);
+
+          // Handle commands
+          if (command.includes('show me your projects')) {
+            const projectsFile = files.find(f => f.name === 'Projects.json');
+            if (projectsFile) {
+              openFile(projectsFile);
+            }
+          }
+          else if (command.includes('show experience') || command.includes('work history')) {
+            const experienceFile = files.find(f => f.name === 'Experience.js');
+            if (experienceFile) {
+              openFile(experienceFile);
+            }
+          }
+          else if (command.includes('education') || command.includes('qualifications')) {
+            const educationFile = files.find(f => f.name === 'Education.js');
+            if (educationFile) {
+              openFile(educationFile);
+            }
+          }
+          else if (command.includes('contact') || command.includes('get in touch')) {
+            const contactFile = files.find(f => f.name === 'Contact.md');
+            if (contactFile) {
+              openFile(contactFile);
+            }
+          }
+          else if (command.includes('switch to dark mode')) {
+            setMode('dark');
+          }
+          else if (command.includes('switch to minimal')) {
+            setMode('minimal');
+          }
+          else if (command.includes('switch to cyberpunk')) {
+            setMode('cyberpunk');
+          }
+          else if (command.includes('switch to gaming')) {
+            setMode('gaming');
+          }
+        };
+
+        recognition.start();
+      } catch (err) {
+        setError('Speech recognition is not supported in this browser.');
+        console.error('Speech recognition initialization error:', err);
+      }
+    };
+
+    initializeSpeechRecognition();
 
     return () => {
       if (recognition) {
         recognition.stop();
       }
     };
-  }, [openFile, files, setMode]);
+  }, [openFile, files, setMode, error]);
 
-  return { isListening };
+  return { isListening, error };
 };

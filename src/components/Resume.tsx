@@ -1,15 +1,20 @@
 import React, { useState } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
-import { Download, ChevronLeft, ChevronRight, FileWarning } from 'lucide-react';
+import { Download, ChevronLeft, ChevronRight, FileWarning, ZoomIn, ZoomOut } from 'lucide-react';
 import { useThemeStore } from '../store/useThemeStore';
 import { cn } from '../utils/cn';
 
 // Set worker URL for pdf.js
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
 
-export const Resume: React.FC = () => {
+interface ResumeProps {
+  pdfUrl: string;
+}
+
+export const Resume: React.FC<ResumeProps> = ({ pdfUrl }) => {
   const [numPages, setNumPages] = useState<number | null>(null);
   const [pageNumber, setPageNumber] = useState(1);
+  const [scale, setScale] = useState(1.2);
   const [error, setError] = useState<string | null>(null);
   const { theme } = useThemeStore();
 
@@ -35,6 +40,25 @@ export const Resume: React.FC = () => {
     }
   };
 
+  const zoomIn = () => {
+    setScale(prev => Math.min(prev + 0.2, 2.5));
+  };
+
+  const zoomOut = () => {
+    setScale(prev => Math.max(prev - 0.2, 0.7));
+  };
+
+  const handleWheel = (e: React.WheelEvent) => {
+    if (e.ctrlKey) {
+      e.preventDefault();
+      if (e.deltaY < 0) {
+        zoomIn();
+      } else {
+        zoomOut();
+      }
+    }
+  };
+
   if (error) {
     return (
       <div className="flex-1 flex items-center justify-center">
@@ -42,7 +66,7 @@ export const Resume: React.FC = () => {
           <FileWarning className="w-16 h-16 mx-auto mb-4 text-yellow-500" />
           <p className="text-lg font-medium mb-2">{error}</p>
           <p className="text-sm opacity-75">
-            Please ensure the resume PDF file is properly placed in the public directory.
+            Please ensure the resume PDF file is properly uploaded to the public directory.
           </p>
         </div>
       </div>
@@ -82,22 +106,42 @@ export const Resume: React.FC = () => {
             <ChevronRight className="w-5 h-5" />
           </button>
         </div>
-        <a
-          href="src/components/resume.pdf"
-          download="resume.pdf"
-          className={cn(
-            "flex items-center gap-2 px-4 py-2 rounded-lg",
-            "bg-opacity-10 hover:bg-opacity-20 transition-colors",
-            "bg-white"
-          )}
-        >
-          <Download className="w-4 h-4" />
-          Download PDF
-        </a>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={zoomOut}
+            className="p-2 rounded-lg hover:bg-opacity-10 hover:bg-white transition-colors"
+            title="Zoom Out"
+          >
+            <ZoomOut className="w-5 h-5" />
+          </button>
+          <span className="text-sm">{Math.round(scale * 100)}%</span>
+          <button
+            onClick={zoomIn}
+            className="p-2 rounded-lg hover:bg-opacity-10 hover:bg-white transition-colors"
+            title="Zoom In"
+          >
+            <ZoomIn className="w-5 h-5" />
+          </button>
+          <a
+            href={pdfUrl}
+            download="resume.pdf"
+            className={cn(
+              "flex items-center gap-2 px-4 py-2 rounded-lg",
+              "bg-opacity-10 hover:bg-opacity-20 transition-colors",
+              "bg-white"
+            )}
+          >
+            <Download className="w-4 h-4" />
+            Download PDF
+          </a>
+        </div>
       </div>
-      <div className="flex-1 overflow-auto p-4 flex justify-center">
+      <div 
+        className="flex-1 overflow-auto p-4 flex justify-center"
+        onWheel={handleWheel}
+      >
         <Document
-          file="src/components/resume.pdf"
+          file={pdfUrl}
           onLoadSuccess={onDocumentLoadSuccess}
           onLoadError={onDocumentLoadError}
           loading={
@@ -109,9 +153,9 @@ export const Resume: React.FC = () => {
         >
           <Page
             pageNumber={pageNumber}
-            renderTextLayer={false}
+            renderTextLayer={true}
             className="shadow-xl"
-            scale={1.2}
+            scale={scale}
             loading={
               <div className="w-[800px] h-[1000px] bg-gray-100 animate-pulse rounded-lg" />
             }

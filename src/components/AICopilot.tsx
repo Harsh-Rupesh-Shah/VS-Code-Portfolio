@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Bot, Send, X, Loader2, ChevronDown, ChevronUp } from 'lucide-react';
+import { Bot, Send, Loader2, ChevronDown, ChevronUp } from 'lucide-react';
 import { useThemeStore } from '../store/useThemeStore';
 import { useFileStore } from '../store/useFileStore';
 import { cn } from '../utils/cn';
@@ -9,6 +9,9 @@ interface Message {
   role: 'assistant' | 'user';
   content: string;
 }
+
+const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
+const API_URL = 'https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent';
 
 export const AICopilot = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -37,74 +40,121 @@ export const AICopilot = () => {
     scrollToBottom();
   }, [messages]);
 
+  const generateSystemPrompt = () => {
+    const portfolioContent = files.map(file => `${file.name}:\n${file.content}`).join('\n\n');
+    
+    return `You are an AI assistant for a portfolio website. You have access to the following portfolio content:
+
+${portfolioContent}
+
+Please use this information to provide accurate and helpful responses about the portfolio owner's experience, projects, and skills. Format your responses using markdown for better readability.
+
+When answering:
+1. Be concise and professional
+2. Use markdown formatting for better readability
+3. Reference specific projects and experiences from the portfolio
+4. Provide code examples when relevant
+5. Use bullet points and headers for organization`;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim() || isLoading) return;
+    if (!input.trim() || isLoading || !GEMINI_API_KEY) return;
 
     const userMessage = input.trim();
     setInput('');
     setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
     setIsLoading(true);
 
-    // Simulate AI response (replace with actual AI integration)
-    setTimeout(() => {
-      let response = '';
-      const lowerInput = userMessage.toLowerCase();
+    try {
+      const response = await fetch(`${API_URL}?key=${GEMINI_API_KEY}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contents: [
+            {
+              role: 'user',
+              parts: [{ text: generateSystemPrompt() }]
+            },
+            {
+              role: 'model',
+              parts: [{ text: 'I understand. I will help answer questions about the portfolio using the provided content.' }]
+            },
+            {
+              role: 'user',
+              parts: [{ text: userMessage }]
+            }
+          ],
+          generationConfig: {
+            temperature: 0.7,
+            topK: 40,
+            topP: 0.95,
+            maxOutputTokens: 1024,
+          },
+          safetySettings: [
+            {
+              category: 'HARM_CATEGORY_HARASSMENT',
+              threshold: 'BLOCK_MEDIUM_AND_ABOVE'
+            },
+            {
+              category: 'HARM_CATEGORY_HATE_SPEECH',
+              threshold: 'BLOCK_MEDIUM_AND_ABOVE'
+            },
+            {
+              category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT',
+              threshold: 'BLOCK_MEDIUM_AND_ABOVE'
+            },
+            {
+              category: 'HARM_CATEGORY_DANGEROUS_CONTENT',
+              threshold: 'BLOCK_MEDIUM_AND_ABOVE'
+            }
+          ]
+        })
+      });
 
-      if (lowerInput.includes('project') || lowerInput.includes('work')) {
-        const projectsFile = files.find(f => f.name === 'Projects.json');
-        if (projectsFile) {
-          openFile(projectsFile);
-          response = "I've opened the Projects file for you. You can see all the projects I've worked on. Would you like me to highlight any specific type of project?";
-        }
-      } else if (lowerInput.includes('experience') || lowerInput.includes('work history')) {
-        const experienceFile = files.find(f => f.name === 'Experience.js');
-        if (experienceFile) {
-          openFile(experienceFile);
-          response = "I've opened my work experience file. You can see my professional journey here. Let me know if you have any specific questions!";
-        }
-      } else if (lowerInput.includes('education') || lowerInput.includes('study')) {
-        const educationFile = files.find(f => f.name === 'Education.js');
-        if (educationFile) {
-          openFile(educationFile);
-          response = "Here's my educational background. I've highlighted my degrees and certifications. Would you like to know more about any specific area?";
-        }
-      } else if (lowerInput.includes('contact') || lowerInput.includes('reach')) {
-        const contactFile = files.find(f => f.name === 'Contact.md');
-        if (contactFile) {
-          openFile(contactFile);
-          response = "I've opened my contact information. Feel free to reach out through any of these channels!";
-        }
-      } else if (lowerInput.includes('interview') || lowerInput.includes('question')) {
-        response = "Here's a common interview question and solution:\n\n" +
-          "**Question: Explain the difference between `let`, `const`, and `var` in JavaScript.**\n\n" +
-          "```javascript\n" +
-          "// var - function-scoped, can be redeclared\n" +
-          "var x = 1;\n" +
-          "var x = 2; // OK\n\n" +
-          "// let - block-scoped, can be reassigned\n" +
-          "let y = 1;\n" +
-          "y = 2; // OK\n" +
-          "let y = 3; // Error!\n\n" +
-          "// const - block-scoped, cannot be reassigned\n" +
-          "const z = 1;\n" +
-          "z = 2; // Error!\n" +
-          "```\n\n" +
-          "Would you like to practice more interview questions?";
-      } else {
-        response = "I'd be happy to help you explore my portfolio. You can ask about:\n\n" +
-          "- Projects and technologies I've worked with\n" +
-          "- Work experience and achievements\n" +
-          "- Educational background\n" +
-          "- Technical skills\n" +
-          "- Contact information\n\n" +
-          "What would you like to know more about?";
+      if (!response.ok) {
+        throw new Error('API request failed');
       }
 
-      setMessages(prev => [...prev, { role: 'assistant', content: response }]);
+      const data = await response.json();
+      
+      if (data.candidates?.[0]?.content?.parts?.[0]?.text) {
+        const aiResponse = data.candidates[0].content.parts[0].text;
+        setMessages(prev => [...prev, { role: 'assistant', content: aiResponse }]);
+      } else {
+        throw new Error('Invalid response format from Gemini API');
+      }
+    } catch (error) {
+      console.error('Error calling Gemini API:', error);
+      setMessages(prev => [...prev, { 
+        role: 'assistant', 
+        content: "I apologize, but I encountered an error processing your request. Please ensure your Gemini API key is properly configured in the .env file." 
+      }]);
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
+
+  if (!GEMINI_API_KEY) {
+    return (
+      <div 
+        className={cn(
+          "fixed bottom-4 right-4 w-96 rounded-lg shadow-xl p-4",
+          "border border-opacity-20 bg-red-500 bg-opacity-10"
+        )}
+      >
+        <p className="text-sm">
+          Please add your Gemini API key to the .env file:
+          <br />
+          <code className="mt-2 block bg-black bg-opacity-20 p-2 rounded">
+            VITE_GEMINI_API_KEY=your_key_here
+          </code>
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div 
